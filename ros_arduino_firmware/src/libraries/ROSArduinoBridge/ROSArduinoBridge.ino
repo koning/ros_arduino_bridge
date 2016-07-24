@@ -46,6 +46,10 @@
  *********************************************************************/
 
 #define USE_BASE      // Enable the base controller code
+//#undef USE_BASE     // Disable the base controller code
+
+#define SERIAL_STREAM Serial
+#define DEBUG_SERIAL_STREAM Serial
 
 /* Define the motor controller and encoder library you are using */
 #ifdef USE_BASE
@@ -60,6 +64,7 @@
 
    /* The A-Star 32U4 Robot Controller LV with Raspberry Pi Bridge */
    #define POLOLU_ASTAR_ROBOT_CONTROLLER
+   //#define USE_ENABLE_INTERRUPT
 
    /* The RoboGaia encoder shield */
    //#define ROBOGAIA
@@ -80,10 +85,11 @@
 /* Maximum PWM signal */
 #define MAX_PWM        255
 
-/* MARCO: The POLOLU_DRV8835 has a range +/- 400, but I'm running 6V motors
-   on 7.4V batteries, so I limit it here to 6/7.4 * 400
-*/
-#define MAX_PWM        325
+// merose: The A-Star has a PWM range of +/- 400 for the motors. Pololu
+// calls them 6V motors, so Marco originally reduced the maximum PWM
+// based on using 7.4V batteries. But Ray looked up the motor specs and
+// found they are rated to 12V, so we'll use the maximum PWM available.
+#define MAX_PWM        400
 
 #if defined(ARDUINO) && ARDUINO >= 100
 #include "Arduino.h"
@@ -133,8 +139,34 @@
 #endif
 
 #ifdef POLOLU_ASTAR_ROBOT_CONTROLLER
+  #include <AStar32U4.h>
   #include <Wire.h>
+/*
+  #include <AnalogScanner.h>
+*/
   #include "I2C.h"
+
+  // Fake pin numbers for A-Star-specific I/O features. These pins will
+  // be emulated as digital or analog I/O pins in runCommand(), below.
+
+  // A-Star buttons as digital input pins.
+  #define ASTAR_BTN_A_PIN      100
+  #define ASTAR_BTN_B_PIN      101
+  #define ASTAR_BTN_C_PIN      102
+
+  // A-Star LEDs as digital output pins.
+  #define ASTAR_YELLOW_LED_PIN 103
+  #define ASTAR_GREEN_LED_PIN  104
+  #define ASTAR_RED_LED_PIN    105
+
+  // A-Star Battery voltage as an analog input pin.
+  #define ASTAR_BATTERY_PIN    106
+  
+  // These objects provide access to the A-Star's on-board
+  // buttons.
+  AStar32U4ButtonA buttonA;
+  AStar32U4ButtonB buttonB;
+  AStar32U4ButtonC buttonC;
 #endif
 
 /* Variable initialization */
@@ -180,51 +212,84 @@ int runCommand() {
 
   switch(cmd) {
   case GET_BAUDRATE:
-    Serial.println(BAUDRATE);
+    SERIAL_STREAM.println(BAUDRATE);
     break;
   case ANALOG_READ:
-    Serial.println(analogRead(arg1));
+    #ifdef POLOLU_ASTAR_ROBOT_CONTROLLER
+    if (arg1 == ASTAR_BATTERY_PIN) {
+      SERIAL_STREAM.println(readBatteryMillivoltsLV());
+      break;
+    }
+    #endif
+    SERIAL_STREAM.println(analogRead(arg1));
     break;
   case DIGITAL_READ:
-    Serial.println(digitalRead(arg1));
+    #ifdef POLOLU_ASTAR_ROBOT_CONTROLLER
+    if (arg1 == ASTAR_BTN_A_PIN) {
+      SERIAL_STREAM.println(buttonA.isPressed());
+      break;
+    } else if (arg1 == ASTAR_BTN_B_PIN) {
+      SERIAL_STREAM.println(buttonB.isPressed());
+      break;
+    } else if (arg1 == ASTAR_BTN_C_PIN) {
+      SERIAL_STREAM.println(buttonC.isPressed());
+      break;
+    }
+    #endif
+    SERIAL_STREAM.println(digitalRead(arg1));
     break;
   case ANALOG_WRITE:
     analogWrite(arg1, arg2);
-    Serial.println("OK"); 
+    SERIAL_STREAM.println("OK"); 
     break;
   case DIGITAL_WRITE:
+    #ifdef POLOLU_ASTAR_ROBOT_CONTROLLER
+    if (arg1 == ASTAR_YELLOW_LED_PIN) {
+      ledYellow(arg2);
+      SERIAL_STREAM.println("OK"); 
+      break;
+    } else if (arg1 == ASTAR_GREEN_LED_PIN) {
+      ledGreen(arg2);
+      SERIAL_STREAM.println("OK"); 
+      break;
+    } else if (arg1 == ASTAR_RED_LED_PIN) {
+      ledRed(arg2);
+      SERIAL_STREAM.println("OK"); 
+      break;
+    }
+    #endif
     if (arg2 == 0) digitalWrite(arg1, LOW);
     else if (arg2 == 1) digitalWrite(arg1, HIGH);
-    Serial.println("OK"); 
+    SERIAL_STREAM.println("OK"); 
     break;
   case PIN_MODE:
     if (arg2 == 0) pinMode(arg1, INPUT);
     else if (arg2 == 1) pinMode(arg1, OUTPUT);
-    Serial.println("OK");
+    SERIAL_STREAM.println("OK");
     break;
   case PING:
-    Serial.println(Ping(arg1));
+    SERIAL_STREAM.println(Ping(arg1));
     break;
 #ifdef USE_SERVOS
   case SERVO_WRITE:
     servos[arg1].setTargetPosition(arg2);
-    Serial.println("OK");
+    SERIAL_STREAM.println("OK");
     break;
   case SERVO_READ:
-    Serial.println(servos[arg1].getServo().read());
+    SERIAL_STREAM.println(servos[arg1].getServo().read());
     break;
 #endif
 
 #ifdef USE_BASE
   case READ_ENCODERS:
-    Serial.print(readEncoder(LEFT));
-    Serial.print(" ");
-    Serial.println(readEncoder(RIGHT));
+    SERIAL_STREAM.print(readEncoder(LEFT));
+    SERIAL_STREAM.print(" ");
+    SERIAL_STREAM.println(readEncoder(RIGHT));
     break;
    case RESET_ENCODERS:
     resetEncoders();
     resetPID();
-    Serial.println("OK");
+    SERIAL_STREAM.println("OK");
     break;
   case MOTOR_SPEEDS:
     /* Reset the auto stop timer */
@@ -236,7 +301,7 @@ int runCommand() {
     else moving = 1;
     leftPID.TargetTicksPerFrame = arg1;
     rightPID.TargetTicksPerFrame = arg2;
-    Serial.println("OK"); 
+    SERIAL_STREAM.println("OK"); 
     break;
   case UPDATE_PID:
     while ((str = strtok_r(p, ":", &p)) != '\0') {
@@ -247,11 +312,11 @@ int runCommand() {
     Kd = pid_args[1];
     Ki = pid_args[2];
     Ko = pid_args[3];
-    Serial.println("OK");
+    SERIAL_STREAM.println("OK");
     break;
 #endif
   default:
-    Serial.println("Invalid Command");
+    SERIAL_STREAM.println("Invalid Command");
     break;
   }
 }
@@ -274,16 +339,16 @@ void setup() {
   resetPID();
 #endif
 
-  /* Attach servos if used */
-#ifdef USE_SERVOS
-  int i;
-  for (i = 0; i < N_SERVOS; i++) {
-    servos[i].initServo(
-        servoPins[i],
-        stepDelay[i],
-        servoInitPosition[i]);
-  }
-#endif
+/* Attach servos if used */
+  #ifdef USE_SERVOS
+    int i;
+    for (i = 0; i < N_SERVOS; i++) {
+      servos[i].initServo(
+          servoPins[i],
+          stepDelay[i],
+          servoInitPosition[i]);
+    }
+  #endif
 }
 
 /* Enter the main loop.  Read and parse input from the serial port
@@ -291,10 +356,10 @@ void setup() {
    interval and check for auto-stop conditions.
 */
 void loop() {
-  while (Serial.available() > 0) {
+  while (SERIAL_STREAM.available() > 0) {
 
     // Read the next character
-    chr = Serial.read();
+    chr = SERIAL_STREAM.read();
 
     // Terminate a command with a CR
     if (chr == 13) {
@@ -335,26 +400,26 @@ void loop() {
   runI2c();
 #endif
 
-  // If we are using base control, run a PID calculation at the appropriate intervals
-  #ifdef USE_BASE
-    if (millis() > nextPID) {
-      updatePID();
-      nextPID += PID_INTERVAL;
-    }
-  
-    // Check to see if we have exceeded the auto-stop interval
-    if ((millis() - lastMotorCommand) > AUTO_STOP_INTERVAL) {
-      setMotorSpeeds(0, 0);
-      moving = 0;
-    }
-  #endif
+// If we are using base control, run a PID calculation at the appropriate intervals
+#ifdef USE_BASE
+  if (millis() > nextPID) {
+    updatePID();
+    nextPID += PID_INTERVAL;
+  }
 
-  // Sweep servos
-  #ifdef USE_SERVOS
-    int i;
-    for (i = 0; i < N_SERVOS; i++) {
-      servos[i].doSweep();
-    }
-    #endif
+  // Check to see if we have exceeded the auto-stop interval
+  if ((millis() - lastMotorCommand) > AUTO_STOP_INTERVAL) {;
+    setMotorSpeeds(0, 0);
+    moving = 0;
+  }
+#endif
+
+// Sweep servos
+#ifdef USE_SERVOS
+  int i;
+  for (i = 0; i < N_SERVOS; i++) {
+    servos[i].doSweep();
+  }
+#endif
 }
 
