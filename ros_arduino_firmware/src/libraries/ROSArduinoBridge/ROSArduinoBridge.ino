@@ -170,7 +170,7 @@
 #endif
 
 /* Variable initialization */
-#define BAUDRATE     57600
+#define BAUDRATE     115200
 
 // A pair of varibles to help parse serial commands (thanks Fergs)
 int arg = 0;

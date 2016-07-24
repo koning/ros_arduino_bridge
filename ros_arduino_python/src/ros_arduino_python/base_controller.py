@@ -20,7 +20,7 @@
     
     http://www.gnu.org/licenses
 """
-import roslib
+import roslib; roslib.load_manifest('ros_arduino_python')
 import rospy
 import os
 import sys
