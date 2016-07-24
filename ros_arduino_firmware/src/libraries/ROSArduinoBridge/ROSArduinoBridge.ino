@@ -46,7 +46,6 @@
  *********************************************************************/
 
 #define USE_BASE      // Enable the base controller code
-//#undef USE_BASE     // Disable the base controller code
 
 /* Define the motor controller and encoder library you are using */
 #ifdef USE_BASE
@@ -139,6 +138,7 @@
 #endif
 
 /* Variable initialization */
+#define BAUDRATE     57600
 
 // A pair of varibles to help parse serial commands (thanks Fergs)
 int arg = 0;
@@ -262,7 +262,10 @@ void setup() {
   initI2c();
 #endif
 
-  Serial.begin(BAUDRATE);
+  SERIAL_STREAM.begin(BAUDRATE);
+  while (!SERIAL_STREAM) {
+    // do nothing
+  }
 
 // Initialize the motor controller if used */
 #ifdef USE_BASE
@@ -271,16 +274,16 @@ void setup() {
   resetPID();
 #endif
 
-/* Attach servos if used */
-  #ifdef USE_SERVOS
-    int i;
-    for (i = 0; i < N_SERVOS; i++) {
-      servos[i].initServo(
-          servoPins[i],
-          stepDelay[i],
-          servoInitPosition[i]);
-    }
-  #endif
+  /* Attach servos if used */
+#ifdef USE_SERVOS
+  int i;
+  for (i = 0; i < N_SERVOS; i++) {
+    servos[i].initServo(
+        servoPins[i],
+        stepDelay[i],
+        servoInitPosition[i]);
+  }
+#endif
 }
 
 /* Enter the main loop.  Read and parse input from the serial port
@@ -332,26 +335,26 @@ void loop() {
   runI2c();
 #endif
 
-// If we are using base control, run a PID calculation at the appropriate intervals
-#ifdef USE_BASE
-  if (millis() > nextPID) {
-    updatePID();
-    nextPID += PID_INTERVAL;
-  }
+  // If we are using base control, run a PID calculation at the appropriate intervals
+  #ifdef USE_BASE
+    if (millis() > nextPID) {
+      updatePID();
+      nextPID += PID_INTERVAL;
+    }
+  
+    // Check to see if we have exceeded the auto-stop interval
+    if ((millis() - lastMotorCommand) > AUTO_STOP_INTERVAL) {
+      setMotorSpeeds(0, 0);
+      moving = 0;
+    }
+  #endif
 
-  // Check to see if we have exceeded the auto-stop interval
-  if ((millis() - lastMotorCommand) > AUTO_STOP_INTERVAL) {;
-    setMotorSpeeds(0, 0);
-    moving = 0;
-  }
-#endif
-
-// Sweep servos
-#ifdef USE_SERVOS
-  int i;
-  for (i = 0; i < N_SERVOS; i++) {
-    servos[i].doSweep();
-  }
-#endif
+  // Sweep servos
+  #ifdef USE_SERVOS
+    int i;
+    for (i = 0; i < N_SERVOS; i++) {
+      servos[i].doSweep();
+    }
+    #endif
 }
 
