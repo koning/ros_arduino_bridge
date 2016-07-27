@@ -83,7 +83,7 @@
 #define BAUDRATE     115200
 
 /* Maximum PWM signal */
-#define MAX_PWM        255
+//#define MAX_PWM        255
 
 // merose: The A-Star has a PWM range of +/- 400 for the motors. Pololu
 // calls them 6V motors, so Marco originally reduced the maximum PWM
@@ -170,7 +170,6 @@
 #endif
 
 /* Variable initialization */
-#define BAUDRATE     115200
 
 // A pair of varibles to help parse serial commands (thanks Fergs)
 int arg = 0;
