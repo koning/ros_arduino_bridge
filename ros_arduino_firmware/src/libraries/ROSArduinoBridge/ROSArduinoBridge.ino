@@ -48,7 +48,7 @@
 #define USE_BASE      // Enable the base controller code
 //#undef USE_BASE     // Disable the base controller code
 
-#define SERIAL_STREAM Serial
+#define SERIAL_STREAM Serial1
 #define DEBUG_SERIAL_STREAM Serial
 
 /* Define the motor controller and encoder library you are using */
