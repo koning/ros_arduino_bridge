@@ -43,7 +43,7 @@ class ArduinoSerial(Arduino):
     def connect(self):
         try:
             print "Connecting to Arduino on port", self.port, "..."
-            self.port = Serial(port=self.port, baudrate=self.baudrate, timeout=self.timeout, write_timeout=self.write_timeout)
+            self.port = Serial(port=self.port, baudrate=self.baudrate, timeout=self.timeout, writeTimeout=self.write_timeout)
             # The next line is necessary to give the firmware time to wake up.
             time.sleep(1)
             test = self.get_baud()
@@ -155,7 +155,11 @@ class ArduinoSerial(Arduino):
             value = None
 
         self.mutex.release()
-        return int(value)
+        try:
+            value = int(value)
+        except:
+            pass
+        return value
 
     def execute_array(self, cmd):
         ''' Thread safe execution of "cmd" on the Arduino returning an array.
