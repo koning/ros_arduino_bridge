@@ -287,6 +287,8 @@ class ArduinoSMBus(Arduino):
         '''
         return 0
 
+    def get_imu_values(self):
+        return 0
 
 """ Basic test for connectivity """
 if __name__ == "__main__":

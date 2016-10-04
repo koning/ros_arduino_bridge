@@ -174,3 +174,9 @@ class Arduino:
             maxsonar trigger pin is RX, and the echo pin is PW.
         '''
         return
+
+    @abstractmethod
+    def get_imu_values(self):
+        ''' The IMU will return accelerations from the sensor
+        '''
+        return
