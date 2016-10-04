@@ -314,7 +314,7 @@ class ArduinoSerial(Arduino):
         Different IMUs will have different number of returned values so
         the length should be checked in the concrete IMU object.
         '''
-        values = self.execute_array('i', vtype=float)
+        return self.execute_array('i', vtype=float)
 
 
 """ Basic test for connectivity """
