@@ -312,7 +312,7 @@ class ArduinoSerial(Arduino):
     def get_imu_values(self):
         '''Get the values from the IMU
         Different IMUs will have different number of returned values so
-        the length should be check in the concrete IMU object.
+        the length should be checked in the concrete IMU object.
         '''
         values = self.execute_array('i', vtype=float)
 
