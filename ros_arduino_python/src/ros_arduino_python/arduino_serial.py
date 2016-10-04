@@ -116,13 +116,13 @@ class ArduinoSerial(Arduino):
         except:
             return None
 
-    def recv_array(self):
+    def recv_array(self, vtype=int):
         ''' This command should not be used on its own: it is called by the execute commands
             below in a thread safe manner.
         '''
         try:
             values = self.recv(self.timeout * self.N_ANALOG_PORTS).split()
-            return map(int, values)
+            return map(vtype, values)
         except:
             return []
 
@@ -161,7 +161,7 @@ class ArduinoSerial(Arduino):
             pass
         return value
 
-    def execute_array(self, cmd):
+    def execute_array(self, cmd, vtype=int):
         ''' Thread safe execution of "cmd" on the Arduino returning an array.
         '''
         self.mutex.acquire()
@@ -181,7 +181,7 @@ class ArduinoSerial(Arduino):
                 try:
                     self.port.flushInput()
                     self.port.write(cmd + '\r')
-                    values = self.recv_array()
+                    values = self.recv_array(vtype=vtype)
                 except:
                     print("Exception executing command: " + cmd)
                 attempts += 1
@@ -308,6 +308,15 @@ class ArduinoSerial(Arduino):
             maxsonar trigger pin is RX, and the echo pin is PW.
         '''
         return self.execute('z %d %d' %(triggerPin, outputPin))
+
+    def get_imu_values(self):
+        values = self.execute_array('e',vtype=float)
+        if len(values) != 3:
+            print "IMU count was not 3"
+            raise SerialException
+            return None
+        else:
+            return values
 
 """ Basic test for connectivity """
 if __name__ == "__main__":

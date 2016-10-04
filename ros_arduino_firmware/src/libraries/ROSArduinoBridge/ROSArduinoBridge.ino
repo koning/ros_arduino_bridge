@@ -64,7 +64,7 @@
 
    /* The A-Star 32U4 Robot Controller LV with Raspberry Pi Bridge */
    #define POLOLU_ASTAR_ROBOT_CONTROLLER
-   //#define USE_ENABLE_INTERRUPT
+   #define USE_ENABLE_INTERRUPT
 
    /* The RoboGaia encoder shield */
    //#define ROBOGAIA
@@ -90,6 +90,11 @@
 // based on using 7.4V batteries. But Ray looked up the motor specs and
 // found they are rated to 12V, so we'll use the maximum PWM available.
 #define MAX_PWM        400
+
+// Add IMU support see IMU.h for more details
+// Joe Koning, 10/03/2016 
+#define USE_IMU
+#define IMU_MMA8451
 
 #if defined(ARDUINO) && ARDUINO >= 100
 #include "Arduino.h"
@@ -136,6 +141,11 @@
    in this number of milliseconds */
   #define AUTO_STOP_INTERVAL 2000
   long lastMotorCommand = AUTO_STOP_INTERVAL;
+#endif
+
+#ifdef USE_IMU
+  // Must be defined before I2C.h, JMK
+  #include "IMU.h"
 #endif
 
 #ifdef POLOLU_ASTAR_ROBOT_CONTROLLER
@@ -278,7 +288,10 @@ int runCommand() {
     SERIAL_STREAM.println(servos[arg1].getServo().read());
     break;
 #endif
-
+#ifdef USE_IMU
+    readIMU();
+    break;
+#endif
 #ifdef USE_BASE
   case READ_ENCODERS:
     SERIAL_STREAM.print(readEncoder(LEFT));
@@ -322,33 +335,40 @@ int runCommand() {
 
 /* Setup function--runs once at startup. */
 void setup() {
-#ifdef USE_I2C
-  initI2c();
-#endif
+  
+  #ifdef USE_I2C
+    initI2c();
+  #endif
 
   SERIAL_STREAM.begin(BAUDRATE);
   while (!SERIAL_STREAM) {
     // do nothing
   }
 
-// Initialize the motor controller if used */
-#ifdef USE_BASE
+  // Initialize the motor controller if used */
+  #ifdef USE_BASE
   initEncoder();
   initMotorController();
   resetPID();
-#endif
+  #endif
 
-/* Attach servos if used */
+  /* Attach servos if used */
   #ifdef USE_SERVOS
-    int i;
-    for (i = 0; i < N_SERVOS; i++) {
-      servos[i].initServo(
+  int i;
+  for (i = 0; i < N_SERVOS; i++) {
+    servos[i].initServo(
           servoPins[i],
           stepDelay[i],
           servoInitPosition[i]);
-    }
+  }
   #endif
+
+  #ifdef USE_IMU
+  initIMU();
+  #endif
+  
 }
+
 
 /* Enter the main loop.  Read and parse input from the serial port
    and run any valid commands. Run a PID calculation at the target
@@ -395,12 +415,12 @@ void loop() {
     }
   }
 
-#ifdef USE_I2C
+  #ifdef USE_I2C
   runI2c();
-#endif
+  #endif
 
-// If we are using base control, run a PID calculation at the appropriate intervals
-#ifdef USE_BASE
+  // If we are using base control, run a PID calculation at the appropriate intervals
+  #ifdef USE_BASE
   if (millis() > nextPID) {
     updatePID();
     nextPID += PID_INTERVAL;
@@ -411,14 +431,14 @@ void loop() {
     setMotorSpeeds(0, 0);
     moving = 0;
   }
-#endif
+  #endif
 
-// Sweep servos
-#ifdef USE_SERVOS
+  // Sweep servos
+  #ifdef USE_SERVOS
   int i;
   for (i = 0; i < N_SERVOS; i++) {
     servos[i].doSweep();
-  }
-#endif
+  } 
+  #endif
 }
 
