@@ -310,13 +310,7 @@ class ArduinoSerial(Arduino):
         return self.execute('z %d %d' %(triggerPin, outputPin))
 
     def get_imu_values(self):
-        values = self.execute_array('e', vtype=float)
-        if len(values) != 3:
-            print "IMU count was not 3"
-            raise SerialException
-            return None
-        else:
-            return values
+        return self.execute_array('e', vtype=float)
 
 """ Basic test for connectivity """
 if __name__ == "__main__":
