@@ -24,6 +24,7 @@ from ros_arduino_python.arduino_driver import Arduino
 from ros_arduino_python.arduino_serial import ArduinoSerial
 from ros_arduino_python.arduino_smbus import ArduinoSMBus
 from ros_arduino_python.arduino_sensors import *
+from ros_arduino_python.arduino_imu import *
 from ros_arduino_msgs.srv import *
 from ros_arduino_python.base_controller import BaseController
 from geometry_msgs.msg import Twist
@@ -136,6 +137,8 @@ class ArduinoROS():
                 sensor = PhidgetsVoltage(self.controller, name, params['pin'], params['rate'], params['frame'])
             elif params['type'] == 'PhidgetsCurrent':
                 sensor = PhidgetsCurrent(self.controller, name, params['pin'], params['rate'], params['frame'])
+            elif params['type'] == 'MPU6050':
+                sensor = MPU6050(self.controller, name, params['addr'], params['rate'], params['frame'])
 
 #                if params['type'] == "MaxEZ1":
 #                    self.sensors[len(self.sensors)]['trigger_pin'] = params['trigger_pin']

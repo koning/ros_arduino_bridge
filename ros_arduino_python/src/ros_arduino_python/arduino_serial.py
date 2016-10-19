@@ -116,6 +116,7 @@ class ArduinoSerial(Arduino):
         except:
             return None
 
+    #def recv_array(self, vtype=int):
     def recv_array(self, vtype=int):
         ''' This command should not be used on its own: it is called by the execute commands
             below in a thread safe manner.
@@ -123,6 +124,7 @@ class ArduinoSerial(Arduino):
         try:
             values = self.recv(self.timeout * self.N_ANALOG_PORTS).split()
             return map(vtype, values)
+            #return map(int , values)
         except:
             return []
 
@@ -176,11 +178,13 @@ class ArduinoSerial(Arduino):
 
         try:
             self.port.write(cmd + '\r')
-            values = self.recv_array()
+            #values = self.recv_array()
+            values = self.recv_array(vtype=vtype)
             while attempts < ntries and (values == '' or values == 'Invalid Command' or values == [] or values == None):
                 try:
                     self.port.flushInput()
                     self.port.write(cmd + '\r')
+                    #values = self.recv_array()
                     values = self.recv_array(vtype=vtype)
                 except:
                     print("Exception executing command: " + cmd)
@@ -309,12 +313,17 @@ class ArduinoSerial(Arduino):
         '''
         return self.execute('z %d %d' %(triggerPin, outputPin))
 
-    def get_imu_values(self):
+    def init_imu(self, addr, itype):
+        '''Initialize the Imu with an address an type
+        '''
+        return self.execute_array('j %d %s' % (addr,itype))
+
+    def get_imu_values(self, addr, vtype):
         '''Get the values from the IMU
         Different IMUs will have different number of returned values so
         the length should be checked in the concrete IMU object.
         '''
-        return self.execute_array('i', vtype=float)
+        return self.execute_array('i %d' % addr, vtype=vtype)
 
 
 """ Basic test for connectivity """
