@@ -91,10 +91,13 @@
 // found they are rated to 12V, so we'll use the maximum PWM available.
 #define MAX_PWM        400
 
-// Add IMU support see IMU.h for more details
+// Add Imu support see Imu.h for more details
 // Joe Koning, 10/03/2016 
 #define USE_IMU
-#define IMU_MMA8451
+//#define IMU_GY85   // Using  sqrtmo's GY-85 class from Github
+#define IMU_MPU6050 // I2Cdevlib MPU6050
+//#define IMU_MPU9250
+//#define IMU_BNO055
 
 #if defined(ARDUINO) && ARDUINO >= 100
 #include "Arduino.h"
@@ -145,7 +148,7 @@
 
 #ifdef USE_IMU
   // Must be defined before I2C.h, JMK
-  #include "IMU.h"
+  #include "Imu.h"
 #endif
 
 #ifdef POLOLU_ASTAR_ROBOT_CONTROLLER
@@ -289,7 +292,11 @@ int runCommand() {
     break;
 #endif
 #ifdef USE_IMU
-    readIMU();
+  case IMU_READ:
+    readIMU(arg1);
+    break;
+  case IMU_CREATE:
+    initIMU(arg1,arg2);
     break;
 #endif
 #ifdef USE_BASE
@@ -362,11 +369,6 @@ void setup() {
           servoInitPosition[i]);
   }
   #endif
-
-  #ifdef USE_IMU
-  initIMU();
-  #endif
-  
 }
 
 

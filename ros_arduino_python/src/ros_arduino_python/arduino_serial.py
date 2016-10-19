@@ -309,12 +309,12 @@ class ArduinoSerial(Arduino):
         '''
         return self.execute('z %d %d' %(triggerPin, outputPin))
 
-    def get_imu_values(self):
+    def get_imu_values(self, vtype=int):
         '''Get the values from the IMU
         Different IMUs will have different number of returned values so
         the length should be checked in the concrete IMU object.
         '''
-        return self.execute_array('i', vtype=float)
+        return self.execute_array('i', vtype=vtype)
 
 
 """ Basic test for connectivity """
