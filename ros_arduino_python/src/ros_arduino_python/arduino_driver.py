@@ -176,7 +176,7 @@ class Arduino:
         return
 
     @abstractmethod
-    def get_imu_values(self):
+    def get_imu_values(self, vttype=int):
         ''' The IMU will return accelerations from the sensor
         '''
         return
