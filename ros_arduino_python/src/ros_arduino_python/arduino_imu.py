@@ -103,7 +103,7 @@ class MPU6050(Imu):
         self.aconv = 2*9.8/32768 # [m/s^2]
         self.gconv = 250./32768  # [rad/s]
                 
-        self.controller.init_imu(sefl.addr, MPU6050_T)
+        self.controller.init_imu(self.addr, MPU6050_T)
     def read_state(self):
         '''This Imu returns linear accelerations and gyro information
         '''
