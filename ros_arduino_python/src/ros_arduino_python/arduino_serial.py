@@ -316,14 +316,14 @@ class ArduinoSerial(Arduino):
     def init_imu(self, addr, itype):
         '''Initialize the Imu with an address an type
         '''
-        return self.execute_array('j %d %s' % (addr,itype))
+        return self.execute_array('j %s %s' % (addr,itype))
 
     def get_imu_values(self, addr, vtype):
         '''Get the values from the IMU
         Different IMUs will have different number of returned values so
         the length should be checked in the concrete IMU object.
         '''
-        return self.execute_array('i %d' % addr, vtype=vtype)
+        return self.execute_array('i %s' % addr, vtype=vtype)
 
 
 """ Basic test for connectivity """

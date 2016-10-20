@@ -172,7 +172,10 @@ class ArduinoROS():
                 msg.header.stamp = now
                 for i in range(len(self.mySensors)):
                     msg.name.append(self.mySensors[i].name)
-                    msg.value.append(self.mySensors[i].value)
+                    try:
+                        msg.value.append(self.mySensors[i].value)
+                    except:
+                        pass
                 try:
                     self.sensorStatePub.publish(msg)
                 except:

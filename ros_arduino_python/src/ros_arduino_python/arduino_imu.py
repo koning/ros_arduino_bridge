@@ -22,14 +22,15 @@
 
 import roslib; roslib.load_manifest('ros_arduino_python')
 import rospy
-from sensor_msgs.msg import Imu
+from arduino_sensors import Sensor
+from sensor_msgs.msg import Imu as msgImu
 
     
-class Imu(object):
-    def __init__(self, controller, addr, name, rate, frame_id, **kwargs):
+class Imu(Sensor):
+    def __init__(self, controller, name, addr, rate, frame_id, **kwargs):
         self.controller = controller
-        self.addr = addr 
         self.name = name
+        self.addr = addr 
         self.rate = rate
 
         self.frame_id = frame_id
@@ -38,15 +39,15 @@ class Imu(object):
         self.orientation = 0.0
         self.cal_buffer =[]
         self.cal_buffer_length = 1000
-        self.imu_data = Imu(header=rospy.Header(frame_id=frame_id))
+        self.imu_data = msgImu(header=rospy.Header(frame_id=frame_id))
         self.imu_data.orientation_covariance = [1,0,0,0,1,0,0,0,1]
         self.imu_data.angular_velocity_covariance = [1,0,0,0,1,0,0,0,1]
         self.imu_data.linear_acceleration_covariance = [1,0,0,0,1,0,0,0,1]
         #self.accel_measurement_range = rospy.get_param('~accel_measurement_range', 2.0) 
         #self.gyro_measurement_range = rospy.get_param('~gyro_measurement_range', 150.0) 
         #self.gyro_scale_correction = rospy.get_param('~gyro_scale_correction', 1.35)
-        self.imu_pub = rospy.Publisher('imu_data/', Imu)
-        self.imu_pub_raw = rospy.Publisher(self.name + '/imu_raw', Imu)
+        self.imu_pub = rospy.Publisher('~sensor/' + self.name , msgImu, queue_size=1)
+        self.imu_pub_raw = rospy.Publisher('~sensor/' +self.name + '_raw', msgImu, queue_size=1)
         
         self.t_delta = rospy.Duration(1.0 / self.rate)
         self.t_next = rospy.Time.now() + self.t_delta
@@ -68,23 +69,23 @@ class Imu(object):
     def acc_to_angles(self, ax, ay, az):
         " Convert accelerations into angles in radian/sec"
         az2 = az**2
-        pitch = atan((ax/(ay**2) + az**2)  
-        roll = atan((ay/(ax**2) + az**2)  
+        #pitch = atan((ax/(ay**2) + az**2)  
+        #roll = atan((ay/(ax**2) + az**2)  
 
-class GY85(Sensor):
+class GY85(Imu):
     def __init__(self, *args, **kwargs):
         super(GY85, self).__init__(*args, **kwargs)
                 
         self.controller.init_imu("GY85", self.addr)
     def read_state(self):
         '''This Imu returns linear accelerations, gyro and magnetometer data'''
-        values = self.controller.get_imu_values(vtype=int)
+        values = self.controller.get_imu_values(self.addr, vtype=int)
         gconv = 9.8 # [m/s]/[g]
         self.imu_data.linear_acceleration_x = gconv*self.values[0]
         self.imu_data.linear_acceleration_y = gconv*self.values[1]
         self.imu_data.linear_acceleration_z = gconv*self.values[2]
             
-class MPU6050(Sensor):
+class MPU6050(Imu):
     def __init__(self, *args, **kwargs):
         super(MPU6050, self).__init__(*args, **kwargs)
         #Full scale is [-32678,32678]
@@ -96,7 +97,7 @@ class MPU6050(Sensor):
     def read_state(self):
         '''This Imu returns linear accelerations and gyro information
         '''
-        values = self.controller.get_imu_values(vtype=int)
+        values = self.controller.get_imu_values(self.addr, vtype=int)
         self.imu_data.linear_acceleration_x = aconv*self.values[0]
         self.imu_data.linear_acceleration_y = aconv*self.values[1]
         self.imu_data.linear_acceleration_z = aconv*self.values[2]
