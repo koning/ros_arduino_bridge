@@ -25,6 +25,16 @@ import rospy
 from arduino_sensors import Sensor
 from sensor_msgs.msg import Imu as msgImu
 
+
+#define GY85_T    1 
+#define BNO055_T  2
+#define MPU6050_T 3
+#define MPU9250_T 4
+
+GY85_T    = 1
+BNO055_T  = 2
+MPU6050_T = 3
+MPU9250_T = 4
     
 class Imu(Sensor):
     def __init__(self, controller, name, addr, rate, frame_id, **kwargs):
@@ -76,7 +86,7 @@ class GY85(Imu):
     def __init__(self, *args, **kwargs):
         super(GY85, self).__init__(*args, **kwargs)
                 
-        self.controller.init_imu("GY85", self.addr)
+        self.controller.init_imu(self.addr, GY85_T)
     def read_state(self):
         '''This Imu returns linear accelerations, gyro and magnetometer data'''
         values = self.controller.get_imu_values(self.addr, vtype=int)
@@ -93,7 +103,7 @@ class MPU6050(Imu):
         self.aconv = 2*9.8/32768 # [m/s^2]
         self.gconv = 250./32768  # [rad/s]
                 
-        self.controller.init_imu("MPU6050", self.addr)
+        self.controller.init_imu(sefl.addr, MPU6050_T)
     def read_state(self):
         '''This Imu returns linear accelerations and gyro information
         '''

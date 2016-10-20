@@ -316,7 +316,7 @@ class ArduinoSerial(Arduino):
     def init_imu(self, addr, itype):
         '''Initialize the Imu with an address an type
         '''
-        return self.execute_array('j %s %s' % (addr,itype))
+        return self.execute_array('j %s %d' % (addr,itype))
 
     def get_imu_values(self, addr, vtype):
         '''Get the values from the IMU
