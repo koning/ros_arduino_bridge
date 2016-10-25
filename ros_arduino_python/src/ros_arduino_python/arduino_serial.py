@@ -248,14 +248,16 @@ class ArduinoSerial(Arduino):
         '''
         return self.execute('b');
 
-    def get_encoder_counts(self):
+    def get_encoder_counts(self, retry=0):
         values = self.execute_array('e')
-        if len(values) != 2:
-            print "Encoder count was not 2"
+        if len(values) != 2 and retry < 2:
+            self.get_encoder_counts(retry=retry+1)
+        elif retry==2:
+            values = None
+            print "Encoder count was not 2 after 3 tries"
             raise SerialException
-            return None
-        else:
-            return values
+
+        return values
 
     def reset_encoders(self):
         ''' Reset the encoder counts to 0
